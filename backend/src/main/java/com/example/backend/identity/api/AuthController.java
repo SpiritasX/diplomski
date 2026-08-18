@@ -2,7 +2,6 @@ package com.example.backend.identity.api;
 
 import com.example.backend.identity.internal.application.AuthService;
 import jakarta.validation.Valid;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
