@@ -21,7 +21,7 @@ import static org.mockito.Mockito.when;
 
 class SecurityConfigAuthenticationManagerTest {
 
-    private final SecurityConfig securityConfig = new SecurityConfig(null, null);
+    private final SecurityConfig securityConfig = new SecurityConfig(null, null, null, null);
     private final PasswordEncoder passwordEncoder = securityConfig.passwordEncoder();
     private final UserDetailsService userDetailsService = mock(UserDetailsService.class);
     private final AuthenticationManager authenticationManager =
