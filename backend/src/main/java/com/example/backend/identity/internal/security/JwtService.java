@@ -1,5 +1,6 @@
 package com.example.backend.identity.internal.security;
 
+import com.example.backend.config.JwtProperties;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,17 +18,14 @@ import java.util.List;
 public class JwtService {
 
     private final Clock clock;
-    private final SecretKey secretKey;
-    private final long expiresIn;
+    private final JwtProperties jwt;
 
     public JwtService(
             Clock clock,
-            @Value("${app.security.jwt.secret}") String secret,
-            @Value("${app.security.jwt.expires-in}") long expiresIn
+            JwtProperties jwt
     ) {
         this.clock = clock;
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-        this.expiresIn = expiresIn;
+        this.jwt = jwt;
     }
 
     public String generateAccessToken(Authentication authentication) {
@@ -35,15 +33,16 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(authentication.getName())
+                .issuer(jwt.issuer())
                 .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plusSeconds(expiresIn)))
+                .expiration(Date.from(now.plusSeconds(jwt.expiresIn())))
                 .claim("authorities", authorities(authentication))
-                .signWith(secretKey, Jwts.SIG.HS256)
+                .signWith(Keys.hmacShaKeyFor(jwt.secret().getBytes(StandardCharsets.UTF_8)), Jwts.SIG.HS256)
                 .compact();
     }
 
     public long expiresIn() {
-        return expiresIn;
+        return jwt.expiresIn();
     }
 
     private List<String> authorities(Authentication authentication) {

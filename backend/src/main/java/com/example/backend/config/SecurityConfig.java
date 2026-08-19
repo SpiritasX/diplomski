@@ -1,5 +1,7 @@
 package com.example.backend.config;
 
+import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,22 +16,32 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.time.Clock;
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 
 @Configuration
-@EnableConfigurationProperties(CorsProperties.class)
+@EnableConfigurationProperties({CorsProperties.class, JwtProperties.class})
 @EnableMethodSecurity
 public class SecurityConfig {
 
     private final CorsProperties cors;
 
-    public SecurityConfig(CorsProperties cors) {
+    private final JwtProperties jwt;
+
+    public SecurityConfig(CorsProperties cors, JwtProperties jwt) {
         this.cors = cors;
+        this.jwt = jwt;
     }
 
     @Bean
@@ -40,11 +52,20 @@ public class SecurityConfig {
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .logout(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/info", "/error").permitAll()
                         .requestMatchers("/auth/**").permitAll()
                         .anyRequest().authenticated())
+                .oauth2ResourceServer(oauth2 ->
+                        oauth2.jwt(jwt ->
+                                jwt.jwtAuthenticationConverter(
+                                        jwtAuthenticationConverter()
+                                )
+                        )
+                )
                 .build();
     }
 
@@ -83,5 +104,37 @@ public class SecurityConfig {
     @Bean
     PasswordEncoder passwordEncoder() {
         return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+    }
+
+    @Bean
+    JwtDecoder jwtDecoder() {
+        SecretKey key = Keys.hmacShaKeyFor(jwt.secret().getBytes(StandardCharsets.UTF_8));
+
+        NimbusJwtDecoder decoder = NimbusJwtDecoder
+                .withSecretKey(key)
+                .macAlgorithm(MacAlgorithm.HS256)
+                .build();
+
+        decoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(jwt.issuer()));
+
+        return decoder;
+    }
+
+    @Bean
+    JwtAuthenticationConverter jwtAuthenticationConverter() {
+        JwtGrantedAuthoritiesConverter authoritiesConverter =
+                new JwtGrantedAuthoritiesConverter();
+
+        authoritiesConverter.setAuthoritiesClaimName("authorities");
+        authoritiesConverter.setAuthorityPrefix("");
+
+        JwtAuthenticationConverter authenticationConverter =
+                new JwtAuthenticationConverter();
+
+        authenticationConverter.setJwtGrantedAuthoritiesConverter(
+                authoritiesConverter
+        );
+
+        return authenticationConverter;
     }
 }
