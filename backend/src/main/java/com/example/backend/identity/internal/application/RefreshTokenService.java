@@ -64,7 +64,7 @@ public class RefreshTokenService {
         return issueToken(session, now);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = BadCredentialsException.class)
     public RefreshGrant rotate(String rawToken) {
         String tokenHash = refreshTokenHasher.hash(rawToken);
         RefreshToken currentToken = refreshTokenRepository.findForUpdateByTokenHash(tokenHash)
