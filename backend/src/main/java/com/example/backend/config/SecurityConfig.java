@@ -33,7 +33,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 
 @Configuration
-@EnableConfigurationProperties({CorsProperties.class, JwtProperties.class})
+@EnableConfigurationProperties({CorsProperties.class, JwtProperties.class, RefreshTokenProperties.class})
 @EnableMethodSecurity
 public class SecurityConfig {
 
