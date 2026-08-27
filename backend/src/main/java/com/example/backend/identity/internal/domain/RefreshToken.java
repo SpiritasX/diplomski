@@ -1,15 +1,6 @@
 package com.example.backend.identity.internal.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.*;
 import lombok.Getter;
 
 import java.time.OffsetDateTime;
@@ -53,8 +44,10 @@ public class RefreshToken {
             String tokenHash,
             OffsetDateTime issuedAt
     ) {
+        this.tokenId = UUID.randomUUID();
         this.session = Objects.requireNonNull(session, "session must not be null");
         this.tokenHash = Objects.requireNonNull(tokenHash, "tokenHash must not be null");
+        this.status = RefreshTokenStatus.ACTIVE;
         this.issuedAt = Objects.requireNonNull(issuedAt, "issuedAt must not be null");
     }
 
