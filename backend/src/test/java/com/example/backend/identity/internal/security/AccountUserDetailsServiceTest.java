@@ -3,6 +3,7 @@ package com.example.backend.identity.internal.security;
 import com.example.backend.identity.internal.persistence.AccountCredentialsProjection;
 import com.example.backend.identity.internal.persistence.AccountRepository;
 import com.example.backend.identity.internal.persistence.AdminMandateRepository;
+import com.example.backend.identity.internal.persistence.RepresentativeMandateRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -32,9 +33,12 @@ class AccountUserDetailsServiceTest {
 
     private final AccountRepository accountRepository = mock(AccountRepository.class);
     private final AdminMandateRepository adminMandateRepository = mock(AdminMandateRepository.class);
+    private final RepresentativeMandateRepository representativeMandateRepository =
+            mock(RepresentativeMandateRepository.class);
     private final AccountUserDetailsService userDetailsService = new AccountUserDetailsService(
             accountRepository,
             adminMandateRepository,
+            representativeMandateRepository,
             FIXED_CLOCK
     );
 
@@ -92,6 +96,23 @@ class AccountUserDetailsServiceTest {
     }
 
     @Test
+    void loadsStudentWithActiveRepresentativeMandate() {
+        String studentIndex = "IN 20/2021";
+
+        when(accountRepository.findCredentialsByStudentIndex(studentIndex))
+                .thenReturn(Optional.of(credentials(studentIndex)));
+        when(representativeMandateRepository.existsActiveMandateForStudent(studentIndex, fixedNow()))
+                .thenReturn(true);
+
+        AccountUserDetails userDetails =
+                (AccountUserDetails) userDetailsService.loadUserByUsername(studentIndex);
+
+        assertThat(userDetails.getAuthorities())
+                .extracting(GrantedAuthority::getAuthority)
+                .contains("ROLE_STUDENT", "ROLE_REPRESENTATIVE");
+    }
+
+    @Test
     void throwsWhenAccountDoesNotExist() {
         String studentIndex = "IN 999/2026";
 
@@ -103,6 +124,8 @@ class AccountUserDetailsServiceTest {
                 .hasMessage("Account not found");
 
         verify(adminMandateRepository, never())
+                .existsActiveMandateForStudent(studentIndex, fixedNow());
+        verify(representativeMandateRepository, never())
                 .existsActiveMandateForStudent(studentIndex, fixedNow());
     }
 
