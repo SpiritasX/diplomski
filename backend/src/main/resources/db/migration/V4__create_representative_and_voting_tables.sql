@@ -20,6 +20,8 @@ CREATE TABLE representative_mandates (
 CREATE TABLE voting_proposals (
     voting_proposal_id      RAW(16) DEFAULT SYS_GUID() PRIMARY KEY,
     creator_student_index   VARCHAR2(20) NOT NULL REFERENCES accounts(student_index),
+    creator_mandate_id      RAW(16) NOT NULL REFERENCES representative_mandates(mandate_id),
+    creator_body_id         RAW(16) NOT NULL REFERENCES representative_bodies(body_id),
     title                   VARCHAR2(200) NOT NULL,
     description             VARCHAR2(1000),
     ballot_type             VARCHAR2(10),

@@ -28,6 +28,12 @@ public class VotingProposal {
     @Column(name = "CREATOR_STUDENT_INDEX", nullable = false, length = 20, updatable = false)
     private String creatorStudentIndex;
 
+    @Column(name = "CREATOR_MANDATE_ID", nullable = false, length = 16, updatable = false)
+    private UUID creatorMandateId;
+
+    @Column(name = "CREATOR_BODY_ID", nullable = false, length = 16, updatable = false)
+    private UUID creatorBodyId;
+
     @Column(name = "TITLE", nullable = false, length = 200)
     private String title;
 
@@ -74,12 +80,16 @@ public class VotingProposal {
 
     public VotingProposal(
             String creatorStudentIndex,
+            UUID creatorMandateId,
+            UUID creatorBodyId,
             String title,
             String description,
             OffsetDateTime createdAt
     ) {
         this.votingProposalId = UUID.randomUUID();
         this.creatorStudentIndex = Objects.requireNonNull(creatorStudentIndex, "creatorStudentIndex must not be null");
+        this.creatorMandateId = Objects.requireNonNull(creatorMandateId, "creatorMandateId must not be null");
+        this.creatorBodyId = Objects.requireNonNull(creatorBodyId, "creatorBodyId must not be null");
         this.title = Objects.requireNonNull(title, "title must not be null");
         this.description = description;
         this.status = VotingProposalStatus.DRAFT;

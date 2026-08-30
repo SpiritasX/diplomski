@@ -52,4 +52,16 @@ public interface RepresentativeMandateRepository extends JpaRepository<Represent
             @Param("bodyId") UUID bodyId,
             @Param("now") OffsetDateTime now
     );
+
+    @Query("""
+            SELECT m
+            FROM RepresentativeMandate m
+            WHERE m.account.studentIndex = :studentIndex
+                AND m.validFrom <= :now
+                AND (m.validUntil IS NULL OR m.validUntil > :now)
+            """)
+    java.util.List<RepresentativeMandate> findActiveMandatesForStudent(
+            @Param("studentIndex") String studentIndex,
+            @Param("now") OffsetDateTime now
+    );
 }

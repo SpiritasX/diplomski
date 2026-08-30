@@ -72,12 +72,18 @@ public class VotingProposalService {
             String creatorStudentIndex,
             CreateVotingProposalRequest request
     ) {
+        OffsetDateTime now = now();
+        IdentityAccess.ActiveMandate mandate = identityAccess.findActiveMandate(creatorStudentIndex, now)
+                .orElseThrow(() -> new BusinessRuleViolationException("Active representative mandate is required to create a voting proposal."));
+
         VotingProposal proposal = votingProposalRepository.save(
                 new VotingProposal(
                         creatorStudentIndex,
+                        mandate.mandateId(),
+                        mandate.bodyId(),
                         normalizedRequiredText(request.title(), "Voting proposal title is required."),
                         normalizedOptionalText(request.description()),
-                        now()
+                        now
                 )
         );
 
@@ -98,10 +104,12 @@ public class VotingProposalService {
     @Transactional
     public VotingProposalResponse updateVotingProposal(
             UUID proposalId,
+            String editorStudentIndex,
             UpdateVotingProposalRequest request
     ) {
         VotingProposal proposal = findProposalForUpdate(proposalId);
 
+        assertEditorAccess(proposal, editorStudentIndex);
         assertDraft(proposal);
 
         if (request.title() != null) {
@@ -151,10 +159,12 @@ public class VotingProposalService {
     @Transactional
     public VotingProposalResponse addVotingProposalOptions(
             UUID proposalId,
+            String editorStudentIndex,
             CreateVotingOptionsRequest request
     ) {
         VotingProposal proposal = findProposalForUpdate(proposalId);
 
+        assertEditorAccess(proposal, editorStudentIndex);
         assertDraft(proposal);
 
         List<VotingOption> existingOptions = votingOptionRepository.findByProposalId(proposalId);
@@ -201,9 +211,10 @@ public class VotingProposalService {
     }
 
     @Transactional
-    public VotingProposalResponse lockProposal(UUID proposalId) {
+    public VotingProposalResponse lockProposal(UUID proposalId, String editorStudentIndex) {
         VotingProposal proposal = findProposalForUpdate(proposalId);
 
+        assertEditorAccess(proposal, editorStudentIndex);
         assertDraft(proposal);
 
         List<VotingOption> options = votingOptionRepository.findByProposalId(proposalId);
@@ -267,6 +278,12 @@ public class VotingProposalService {
     private static void assertDraft(VotingProposal proposal) {
         if (!proposal.isDraft()) {
             throw new BusinessRuleViolationException("Only draft voting proposals can be changed.");
+        }
+    }
+
+    private void assertEditorAccess(VotingProposal proposal, String editorStudentIndex) {
+        if (!identityAccess.hasActiveMandateInBody(editorStudentIndex, proposal.getCreatorBodyId(), now())) {
+            throw new BusinessRuleViolationException("Only representatives of the same body can edit this proposal.");
         }
     }
 
@@ -491,6 +508,8 @@ public class VotingProposalService {
         return new VotingProposalResponse(
                 proposal.getVotingProposalId(),
                 proposal.getCreatorStudentIndex(),
+                proposal.getCreatorMandateId(),
+                proposal.getCreatorBodyId(),
                 proposal.getTitle(),
                 proposal.getDescription(),
                 proposal.getBallotType(),

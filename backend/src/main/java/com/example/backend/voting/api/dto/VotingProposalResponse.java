@@ -12,6 +12,8 @@ import java.util.UUID;
 public record VotingProposalResponse(
         UUID proposalId,
         String creatorStudentIndex,
+        UUID creatorMandateId,
+        UUID creatorBodyId,
         String title,
         String description,
         BallotType ballotType,

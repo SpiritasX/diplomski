@@ -47,21 +47,28 @@ public class VotingProposalController {
     @PatchMapping("/{proposalId}")
     @PreAuthorize("hasAuthority('ROLE_REPRESENTATIVE')")
     public VotingProposalResponse updateVotingProposal(
+            Authentication authentication,
             @PathVariable UUID proposalId,
             @Valid @RequestBody UpdateVotingProposalRequest request
     ) {
-        return votingProposalService.updateVotingProposal(proposalId, request);
+        return votingProposalService.updateVotingProposal(
+                proposalId,
+                studentIndex(authentication),
+                request
+        );
     }
 
     @PostMapping("/{proposalId}/options")
     @PreAuthorize("hasAuthority('ROLE_REPRESENTATIVE')")
     @ResponseStatus(HttpStatus.CREATED)
     public VotingProposalResponse createVotingProposalOptions(
+            Authentication authentication,
             @PathVariable UUID proposalId,
             @Valid @RequestBody CreateVotingOptionsRequest request
     ) {
         return votingProposalService.addVotingProposalOptions(
                 proposalId,
+                studentIndex(authentication),
                 request
         );
     }
@@ -83,9 +90,10 @@ public class VotingProposalController {
     @PostMapping("/{proposalId}/lock")
     @PreAuthorize("hasAuthority('ROLE_REPRESENTATIVE')")
     public VotingProposalResponse lockProposal(
+            Authentication authentication,
             @PathVariable UUID proposalId
     ) {
-        return votingProposalService.lockProposal(proposalId);
+        return votingProposalService.lockProposal(proposalId, studentIndex(authentication));
     }
 
     private static String studentIndex(Authentication authentication) {
