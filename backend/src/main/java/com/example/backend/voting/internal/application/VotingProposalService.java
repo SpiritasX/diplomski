@@ -18,6 +18,7 @@ import com.example.backend.voting.internal.domain.VotingOption;
 import com.example.backend.voting.internal.domain.VotingOptionId;
 import com.example.backend.voting.internal.domain.VotingProposal;
 import com.example.backend.voting.internal.domain.enums.BallotType;
+import com.example.backend.voting.internal.domain.enums.DecisionRule;
 import com.example.backend.voting.internal.domain.enums.QuorumType;
 import com.example.backend.voting.internal.persistence.EligibleVoterRepository;
 import com.example.backend.voting.internal.persistence.VotingOptionRepository;
@@ -137,7 +138,7 @@ public class VotingProposalService {
         }
 
         if (request.decisionRule() != null) {
-            proposal.setDecisionRule(normalizedOptionalText(request.decisionRule()));
+            proposal.setDecisionRule(request.decisionRule());
         }
 
         return toResponse(
@@ -290,7 +291,7 @@ public class VotingProposalService {
             throw new BusinessRuleViolationException("Voting proposal quorum type is required before locking.");
         }
 
-        if (proposal.getDecisionRule() == null || proposal.getDecisionRule().isBlank()) {
+        if (proposal.getDecisionRule() == null) {
             throw new BusinessRuleViolationException("Voting proposal decision rule is required before locking.");
         }
 
@@ -428,7 +429,7 @@ public class VotingProposalService {
             OffsetDateTime endsAt,
             QuorumType quorumType,
             Long quorumValue,
-            String decisionRule,
+            DecisionRule decisionRule,
             List<ProposalOption> options,
             List<String> eligibleVoters
     ) {
@@ -440,7 +441,7 @@ public class VotingProposalService {
         appendHashField(builder, "ends_at", endsAt.toInstant().toString());
         appendHashField(builder, "quorum_type", quorumType.name());
         appendHashField(builder, "quorum_value", quorumValue);
-        appendHashField(builder, "decision_rule", decisionRule);
+        appendHashField(builder, "decision_rule", decisionRule.name());
 
         options.stream()
                 .sorted((left, right) -> left.optionNumber().compareTo(right.optionNumber()))

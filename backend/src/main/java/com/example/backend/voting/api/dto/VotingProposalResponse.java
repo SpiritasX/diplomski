@@ -1,6 +1,7 @@
 package com.example.backend.voting.api.dto;
 
 import com.example.backend.voting.internal.domain.enums.BallotType;
+import com.example.backend.voting.internal.domain.enums.DecisionRule;
 import com.example.backend.voting.internal.domain.enums.QuorumType;
 import com.example.backend.voting.internal.domain.enums.VotingProposalStatus;
 
@@ -19,7 +20,7 @@ public record VotingProposalResponse(
         OffsetDateTime endsAt,
         QuorumType quorumType,
         Long quorumValue,
-        String decisionRule,
+        DecisionRule decisionRule,
         String configurationHash,
         OffsetDateTime createdAt,
         OffsetDateTime lockedAt,

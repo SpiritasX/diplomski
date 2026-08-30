@@ -28,13 +28,17 @@ CREATE TABLE voting_proposals (
     ends_at                 TIMESTAMP WITH TIME ZONE,
     quorum_type             VARCHAR2(15),
     quorum_value            NUMBER(19),
-    decision_rule           VARCHAR2(50),
+    decision_rule           VARCHAR2(20),
     created_at              TIMESTAMP WITH TIME ZONE DEFAULT SYSTIMESTAMP NOT NULL,
     locked_at               TIMESTAMP WITH TIME ZONE,
     configuration_hash      VARCHAR2(64),
 
     CONSTRAINT chk_voting_proposal_dates
-        CHECK (starts_at IS NULL OR ends_at IS NULL OR ends_at > starts_at),
+        CHECK (
+            starts_at IS NULL
+            OR ends_at IS NULL
+            OR ends_at > starts_at
+        ),
     CONSTRAINT chk_voting_proposal_ballot_type
         CHECK (ballot_type IN ('PUBLIC', 'SECRET')),
     CONSTRAINT chk_voting_proposal_status
@@ -48,6 +52,8 @@ CREATE TABLE voting_proposals (
             OR (quorum_type = 'ABSOLUTE' AND quorum_value >= 1)
             OR (quorum_type = 'PERCENTAGE' AND quorum_value BETWEEN 1 AND 100)
         ),
+    CONSTRAINT chk_voting_proposal_decision_rule
+        CHECK (decision_rule IN ('PLURALITY', 'SIMPLE_MAJORITY', 'UNANIMITY')),
     CONSTRAINT chk_voting_proposal_locked_configuration
         CHECK (
             status = 'DRAFT'
@@ -62,6 +68,20 @@ CREATE TABLE voting_proposals (
             )
         )
 );
+
+CREATE OR REPLACE TRIGGER trg_voting_proposal_start_time
+    BEFORE INSERT OR UPDATE OF starts_at
+    ON voting_proposals
+    FOR EACH ROW
+BEGIN
+    IF :NEW.starts_at IS NOT NULL AND :NEW.starts_at <= SYSTIMESTAMP THEN
+        RAISE_APPLICATION_ERROR(
+                -20001,
+                'starts_at must be in the future'
+        );
+    END IF;
+END;
+/
 
 CREATE TABLE voting_options (
     voting_proposal_id      RAW(16) NOT NULL REFERENCES voting_proposals(voting_proposal_id),

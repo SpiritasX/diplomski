@@ -1,6 +1,7 @@
 package com.example.backend.voting.internal.domain;
 
 import com.example.backend.voting.internal.domain.enums.BallotType;
+import com.example.backend.voting.internal.domain.enums.DecisionRule;
 import com.example.backend.voting.internal.domain.enums.QuorumType;
 import com.example.backend.voting.internal.domain.enums.VotingProposalStatus;
 import jakarta.persistence.Column;
@@ -54,8 +55,9 @@ public class VotingProposal {
     @Column(name = "QUORUM_VALUE")
     private Long quorumValue;
 
-    @Column(name = "DECISION_RULE", length = 50)
-    private String decisionRule;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "DECISION_RULE", length = 20)
+    private DecisionRule decisionRule;
 
     @Column(name = "CREATED_AT", nullable = false)
     private OffsetDateTime createdAt;
@@ -148,7 +150,7 @@ public class VotingProposal {
         this.quorumValue = quorumValue;
     }
 
-    public void setDecisionRule(String decisionRule) {
+    public void setDecisionRule(DecisionRule decisionRule) {
         if (!isDraft()) {
             return;
         }

@@ -1,6 +1,7 @@
 package com.example.backend.voting.api.dto;
 
 import com.example.backend.voting.internal.domain.enums.BallotType;
+import com.example.backend.voting.internal.domain.enums.DecisionRule;
 import com.example.backend.voting.internal.domain.enums.QuorumType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -46,7 +47,6 @@ public record UpdateVotingProposalRequest(
         Long quorumValue,
 
         @Schema(example = "SIMPLE_MAJORITY")
-        @Size(max = 50)
-        String decisionRule
+        DecisionRule decisionRule
 ) {
 }
