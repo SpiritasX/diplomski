@@ -9,6 +9,7 @@ import com.example.backend.voting.api.dto.CreateVotingOptionRequest;
 import com.example.backend.voting.api.dto.CreateVotingOptionsRequest;
 import com.example.backend.voting.api.dto.CreateVotingProposalRequest;
 import com.example.backend.voting.api.dto.EligibleVoterResponse;
+import com.example.backend.voting.api.dto.UpdateVotingProposalRequest;
 import com.example.backend.voting.api.dto.VotingOptionResponse;
 import com.example.backend.voting.api.dto.VotingProposalResponse;
 import com.example.backend.voting.internal.domain.EligibleVoter;
@@ -26,7 +27,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 @Service
@@ -65,38 +71,16 @@ public class VotingProposalService {
             String creatorStudentIndex,
             CreateVotingProposalRequest request
     ) {
-        validateProposalRequest(request);
-
-        Long quorumValue = normalizedQuorumValue(request.quorumType(), request.quorumValue());
-        String decisionRule = normalizedOptionalText(request.decisionRule());
-        List<ProposalOption> options = normalizeOptions(request.options());
-
         VotingProposal proposal = votingProposalRepository.save(
                 new VotingProposal(
                         creatorStudentIndex,
-                        request.title().strip(),
+                        normalizedRequiredText(request.title(), "Voting proposal title is required."),
                         normalizedOptionalText(request.description()),
-                        request.ballotType(),
-                        request.startsAt(),
-                        request.endsAt(),
-                        request.quorumType(),
-                        quorumValue,
-                        decisionRule,
                         now()
                 )
         );
 
-        List<VotingOption> savedOptions = votingOptionRepository.saveAll(
-                options.stream()
-                        .map(option -> new VotingOption(
-                                option.optionNumber(),
-                                option.text(),
-                                proposal
-                        ))
-                        .toList()
-        );
-
-        return toResponse(proposal, savedOptions, List.of());
+        return toResponse(proposal, List.of(), List.of());
     }
 
     @Transactional(readOnly = true)
@@ -107,6 +91,59 @@ public class VotingProposalService {
                 proposal,
                 votingOptionRepository.findByProposalId(proposalId),
                 eligibleVoterRepository.findByProposalId(proposalId)
+        );
+    }
+
+    @Transactional
+    public VotingProposalResponse updateVotingProposal(
+            UUID proposalId,
+            UpdateVotingProposalRequest request
+    ) {
+        VotingProposal proposal = findProposalForUpdate(proposalId);
+
+        assertDraft(proposal);
+
+        if (request.title() != null) {
+            proposal.setTitle(
+                    normalizedRequiredText(
+                            request.title(),
+                            "Voting proposal title is required."
+                    )
+            );
+        }
+
+        if (request.description() != null) {
+            proposal.setDescription(normalizedOptionalText(request.description()));
+        }
+
+        if (request.ballotType() != null) {
+            proposal.setBallotType(request.ballotType());
+        }
+
+        if (request.startsAt() != null) {
+            proposal.setStartsAt(request.startsAt());
+        }
+
+        if (request.endsAt() != null) {
+            proposal.setEndsAt(request.endsAt());
+        }
+
+        if (request.quorumType() != null) {
+            proposal.setQuorumType(request.quorumType());
+        }
+
+        if (request.quorumValue() != null) {
+            proposal.setQuorumValue(request.quorumValue());
+        }
+
+        if (request.decisionRule() != null) {
+            proposal.setDecisionRule(normalizedOptionalText(request.decisionRule()));
+        }
+
+        return toResponse(
+                proposal,
+                votingOptionRepository.findByProposalId(proposalId),
+                List.of()
         );
     }
 
@@ -174,12 +211,17 @@ public class VotingProposalService {
             throw new BusinessRuleViolationException("Voting proposal must have at least two options before locking.");
         }
 
+        validateProposalBeforeLock(proposal);
+
         OffsetDateTime lockedAt = now();
         List<String> eligibleStudentIndexes = identityAccess.findEligibleVoterStudentIndexes(lockedAt);
 
         if (eligibleStudentIndexes.isEmpty()) {
             throw new BusinessRuleViolationException("Voting proposal must have at least one eligible voter before locking.");
         }
+
+        Long quorumValue = normalizedQuorumValue(proposal.getQuorumType(), proposal.getQuorumValue());
+        proposal.setQuorumValue(quorumValue);
 
         String configurationHash = configurationHash(
                 proposal,
@@ -205,12 +247,6 @@ public class VotingProposalService {
         return toResponse(proposal, options, eligibleVoters);
     }
 
-    private void assertRepresentativeBodyExists(UUID representativeBodyId) {
-        if (!identityAccess.representativeBodyExists(representativeBodyId)) {
-            throw new ResourceNotFoundException("Representative body not found.");
-        }
-    }
-
     private VotingProposal findProposal(UUID proposalId) {
         return votingProposalRepository.findById(proposalId)
                 .orElseThrow(() -> new ResourceNotFoundException("Voting proposal not found."));
@@ -233,12 +269,32 @@ public class VotingProposalService {
         }
     }
 
-    private static void validateProposalRequest(CreateVotingProposalRequest request) {
-        if (!request.endsAt().isAfter(request.startsAt())) {
+    private static void validateProposalBeforeLock(VotingProposal proposal) {
+        if (proposal.getBallotType() == null) {
+            throw new BusinessRuleViolationException("Voting proposal ballot type is required before locking.");
+        }
+
+        if (proposal.getStartsAt() == null) {
+            throw new BusinessRuleViolationException("Voting proposal start time is required before locking.");
+        }
+
+        if (proposal.getEndsAt() == null) {
+            throw new BusinessRuleViolationException("Voting proposal end time is required before locking.");
+        }
+
+        if (!proposal.getEndsAt().isAfter(proposal.getStartsAt())) {
             throw new BusinessRuleViolationException("Voting proposal end time must be after start time.");
         }
 
-        normalizedQuorumValue(request.quorumType(), request.quorumValue());
+        if (proposal.getQuorumType() == null) {
+            throw new BusinessRuleViolationException("Voting proposal quorum type is required before locking.");
+        }
+
+        if (proposal.getDecisionRule() == null || proposal.getDecisionRule().isBlank()) {
+            throw new BusinessRuleViolationException("Voting proposal decision rule is required before locking.");
+        }
+
+        normalizedQuorumValue(proposal.getQuorumType(), proposal.getQuorumValue());
     }
 
     private static Long normalizedQuorumValue(QuorumType quorumType, Long quorumValue) {
@@ -267,6 +323,16 @@ public class VotingProposalService {
         }
 
         return text.strip();
+    }
+
+    private static String normalizedRequiredText(String text, String errorMessage) {
+        String normalizedText = Objects.requireNonNullElse(text, "").strip();
+
+        if (normalizedText.isBlank()) {
+            throw new BusinessRuleViolationException(errorMessage);
+        }
+
+        return normalizedText;
     }
 
     private static List<ProposalOption> normalizeOptions(List<CreateVotingOptionRequest> requests) {

@@ -22,11 +22,11 @@ CREATE TABLE voting_proposals (
     creator_student_index   VARCHAR2(20) NOT NULL REFERENCES accounts(student_index),
     title                   VARCHAR2(200) NOT NULL,
     description             VARCHAR2(1000),
-    ballot_type             VARCHAR2(10) NOT NULL,
+    ballot_type             VARCHAR2(10),
     status                  VARCHAR2(10) DEFAULT 'DRAFT' NOT NULL,
-    starts_at               TIMESTAMP WITH TIME ZONE NOT NULL,
-    ends_at                 TIMESTAMP WITH TIME ZONE NOT NULL,
-    quorum_type             VARCHAR2(15) NOT NULL,
+    starts_at               TIMESTAMP WITH TIME ZONE,
+    ends_at                 TIMESTAMP WITH TIME ZONE,
+    quorum_type             VARCHAR2(15),
     quorum_value            NUMBER(19),
     decision_rule           VARCHAR2(50),
     created_at              TIMESTAMP WITH TIME ZONE DEFAULT SYSTIMESTAMP NOT NULL,
@@ -34,7 +34,7 @@ CREATE TABLE voting_proposals (
     configuration_hash      VARCHAR2(64),
 
     CONSTRAINT chk_voting_proposal_dates
-        CHECK (ends_at > starts_at),
+        CHECK (starts_at IS NULL OR ends_at IS NULL OR ends_at > starts_at),
     CONSTRAINT chk_voting_proposal_ballot_type
         CHECK (ballot_type IN ('PUBLIC', 'SECRET')),
     CONSTRAINT chk_voting_proposal_status
@@ -43,9 +43,23 @@ CREATE TABLE voting_proposals (
         CHECK (quorum_type IN ('NONE', 'PERCENTAGE', 'ABSOLUTE')),
     CONSTRAINT chk_voting_proposal_quorum_value
         CHECK (
-            (quorum_type = 'NONE' AND quorum_value IS NULL)
+            status = 'DRAFT'
+            OR (quorum_type = 'NONE' AND quorum_value IS NULL)
             OR (quorum_type = 'ABSOLUTE' AND quorum_value >= 1)
             OR (quorum_type = 'PERCENTAGE' AND quorum_value BETWEEN 1 AND 100)
+        ),
+    CONSTRAINT chk_voting_proposal_locked_configuration
+        CHECK (
+            status = 'DRAFT'
+            OR (
+                ballot_type IS NOT NULL
+                AND starts_at IS NOT NULL
+                AND ends_at IS NOT NULL
+                AND quorum_type IS NOT NULL
+                AND decision_rule IS NOT NULL
+                AND locked_at IS NOT NULL
+                AND configuration_hash IS NOT NULL
+            )
         )
 );
 

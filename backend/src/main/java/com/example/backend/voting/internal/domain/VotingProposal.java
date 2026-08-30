@@ -34,21 +34,21 @@ public class VotingProposal {
     private String description;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "BALLOT_TYPE", nullable = false, length = 10)
+    @Column(name = "BALLOT_TYPE", length = 10)
     private BallotType ballotType;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "STATUS", nullable = false, length = 10)
     private VotingProposalStatus status;
 
-    @Column(name = "STARTS_AT", nullable = false)
+    @Column(name = "STARTS_AT")
     private OffsetDateTime startsAt;
 
-    @Column(name = "ENDS_AT", nullable = false)
+    @Column(name = "ENDS_AT")
     private OffsetDateTime endsAt;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "QUORUM_TYPE", nullable = false, length = 15)
+    @Column(name = "QUORUM_TYPE", length = 15)
     private QuorumType quorumType;
 
     @Column(name = "QUORUM_VALUE")
@@ -74,25 +74,13 @@ public class VotingProposal {
             String creatorStudentIndex,
             String title,
             String description,
-            BallotType ballotType,
-            OffsetDateTime startsAt,
-            OffsetDateTime endsAt,
-            QuorumType quorumType,
-            Long quorumValue,
-            String decisionRule,
             OffsetDateTime createdAt
     ) {
         this.votingProposalId = UUID.randomUUID();
         this.creatorStudentIndex = Objects.requireNonNull(creatorStudentIndex, "creatorStudentIndex must not be null");
         this.title = Objects.requireNonNull(title, "title must not be null");
         this.description = description;
-        this.ballotType = Objects.requireNonNull(ballotType, "ballotType must not be null");
         this.status = VotingProposalStatus.DRAFT;
-        this.startsAt = Objects.requireNonNull(startsAt, "startsAt must not be null");
-        this.endsAt = Objects.requireNonNull(endsAt, "endsAt must not be null");
-        this.quorumType = Objects.requireNonNull(quorumType, "quorumType must not be null");
-        this.quorumValue = quorumValue;
-        this.decisionRule = decisionRule;
         this.createdAt = Objects.requireNonNull(createdAt, "createdAt must not be null");
     }
 
@@ -104,12 +92,68 @@ public class VotingProposal {
         return status == VotingProposalStatus.LOCKED;
     }
 
+    public void setTitle(String title) {
+        if (!isDraft()) {
+            return;
+        }
+
+        this.title = Objects.requireNonNull(title, "title must not be null");
+    }
+
+    public void setDescription(String description) {
+        if (!isDraft()) {
+            return;
+        }
+
+        this.description = description;
+    }
+
     public void setBallotType(BallotType ballotType) {
         if (!isDraft()) {
             return;
         }
 
         this.ballotType = Objects.requireNonNull(ballotType, "ballotType must not be null");
+    }
+
+    public void setStartsAt(OffsetDateTime startsAt) {
+        if (!isDraft()) {
+            return;
+        }
+
+        this.startsAt = Objects.requireNonNull(startsAt, "startsAt must not be null");
+    }
+
+    public void setEndsAt(OffsetDateTime endsAt) {
+        if (!isDraft()) {
+            return;
+        }
+
+        this.endsAt = Objects.requireNonNull(endsAt, "endsAt must not be null");
+    }
+
+    public void setQuorumType(QuorumType quorumType) {
+        if (!isDraft()) {
+            return;
+        }
+
+        this.quorumType = Objects.requireNonNull(quorumType, "quorumType must not be null");
+    }
+
+    public void setQuorumValue(Long quorumValue) {
+        if (!isDraft()) {
+            return;
+        }
+
+        this.quorumValue = quorumValue;
+    }
+
+    public void setDecisionRule(String decisionRule) {
+        if (!isDraft()) {
+            return;
+        }
+
+        this.decisionRule = decisionRule;
     }
 
     public void lock(OffsetDateTime lockedAt, String configurationHash) {
