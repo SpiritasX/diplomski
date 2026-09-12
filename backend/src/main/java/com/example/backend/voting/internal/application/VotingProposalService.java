@@ -259,6 +259,18 @@ public class VotingProposalService {
         return toResponse(proposal, options, eligibleVoters);
     }
 
+    @Transactional
+    public VotingProposalResponse cancelProposal(UUID proposalId, String editorStudentIndex) {
+        VotingProposal proposal = findProposalForUpdate(proposalId);
+
+        assertEditorAccess(proposal, editorStudentIndex);
+        assertDraftOrLocked(proposal);
+        
+        proposal.cancel();
+
+        return toResponse(proposal, List.of(), List.of());
+    }
+
     private VotingProposal findProposal(UUID proposalId) {
         return votingProposalRepository.findById(proposalId)
                 .orElseThrow(() -> new ResourceNotFoundException("Voting proposal not found."));
@@ -278,6 +290,12 @@ public class VotingProposalService {
     private static void assertDraft(VotingProposal proposal) {
         if (!proposal.isDraft()) {
             throw new BusinessRuleViolationException("Only draft voting proposals can be changed.");
+        }
+    }
+
+    private static void assertDraftOrLocked(VotingProposal proposal) {
+        if (!proposal.isLocked() && !proposal.isDraft()) {
+            throw new BusinessRuleViolationException("Only locked and draft voting proposals can be cancelled.");
         }
     }
 

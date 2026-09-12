@@ -76,11 +76,29 @@ CREATE OR REPLACE TRIGGER trg_voting_proposal_start_time
     ON voting_proposals
     FOR EACH ROW
 BEGIN
-    IF :NEW.starts_at IS NOT NULL AND :NEW.starts_at <= SYSTIMESTAMP THEN
-        RAISE_APPLICATION_ERROR(
-                -20001,
-                'starts_at must be in the future'
-        );
+    IF INSERTING THEN
+        IF :NEW.starts_at IS NOT NULL AND :NEW.starts_at <= SYSTIMESTAMP THEN
+            RAISE_APPLICATION_ERROR(
+                    -20001,
+                    'starts_at must be in the future'
+            );
+        END IF;
+    ELSIF UPDATING THEN
+        IF (
+               (:OLD.starts_at IS NULL AND :NEW.starts_at IS NOT NULL)
+                   OR
+               (:OLD.starts_at IS NOT NULL AND :NEW.starts_at IS NULL)
+                   OR
+               (:OLD.starts_at <> :NEW.starts_at)
+               )
+            AND :NEW.starts_at IS NOT NULL
+            AND :NEW.starts_at <= SYSTIMESTAMP THEN
+
+            RAISE_APPLICATION_ERROR(
+                    -20001,
+                    'starts_at must be in the future'
+            );
+        END IF;
     END IF;
 END;
 /

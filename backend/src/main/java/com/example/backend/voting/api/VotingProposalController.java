@@ -96,6 +96,15 @@ public class VotingProposalController {
         return votingProposalService.lockProposal(proposalId, studentIndex(authentication));
     }
 
+    @PostMapping("/{proposalId}/cancel")
+    @PreAuthorize("hasAuthority('ROLE_REPRESENTATIVE')")
+    public VotingProposalResponse cancelProposal(
+            Authentication authentication,
+            @PathVariable UUID proposalId
+    ) {
+        return votingProposalService.cancelProposal(proposalId, studentIndex(authentication));
+    }
+
     private static String studentIndex(Authentication authentication) {
         return authentication.getName();
     }

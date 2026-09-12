@@ -104,6 +104,10 @@ public class VotingProposal {
         return status == VotingProposalStatus.LOCKED;
     }
 
+    public boolean isOpen() {
+        return status == VotingProposalStatus.OPEN;
+    }
+
     public void setTitle(String title) {
         if (!isDraft()) {
             return;
@@ -176,5 +180,29 @@ public class VotingProposal {
         this.status = VotingProposalStatus.LOCKED;
         this.lockedAt = Objects.requireNonNull(lockedAt, "lockedAt must not be null");
         this.configurationHash = Objects.requireNonNull(configurationHash, "configurationHash must not be null");
+    }
+
+    public void cancel() {
+        if (!isDraft() && !isLocked()) {
+            return;
+        }
+
+        this.status = VotingProposalStatus.CANCELLED;
+    }
+
+    public void open() {
+        if (!isLocked()) {
+            return;
+        }
+
+        this.status = VotingProposalStatus.OPEN;
+    }
+
+    public void close() {
+        if (!isLocked() && !isOpen()) {
+            return;
+        }
+
+        this.status = VotingProposalStatus.CLOSED;
     }
 }
