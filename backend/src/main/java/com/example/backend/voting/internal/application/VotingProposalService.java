@@ -245,13 +245,11 @@ public class VotingProposalService {
 
         proposal.lock(lockedAt, configurationHash);
 
-        Set<String> generatedReceiptHashes = new HashSet<>();
         List<EligibleVoter> eligibleVoters = eligibleVoterRepository.saveAll(
                 eligibleStudentIndexes.stream()
                         .map(studentIndex -> new EligibleVoter(
                                 proposal,
-                                studentIndex,
-                                generateUniqueReceiptHash(generatedReceiptHashes)
+                                studentIndex
                         ))
                         .toList()
         );
@@ -431,18 +429,6 @@ public class VotingProposalService {
         }
     }
 
-    private String generateUniqueReceiptHash(Set<String> generatedReceiptHashes) {
-        for (int attempt = 0; attempt < MAX_RECEIPT_HASH_GENERATION_ATTEMPTS; attempt++) {
-            String receiptHash = refreshTokenHasher.hash(refreshTokenGenerator.generate());
-
-            if (generatedReceiptHashes.add(receiptHash) && !eligibleVoterRepository.existsByReceiptHash(receiptHash)) {
-                return receiptHash;
-            }
-        }
-
-        throw new IllegalStateException("Unable to generate unique eligible voter receipt hash.");
-    }
-
     private String configurationHash(VotingProposal proposal, List<ProposalOption> options, List<String> eligibleVoters) {
         return configurationHash(
                 proposal.getTitle(),
@@ -565,8 +551,7 @@ public class VotingProposalService {
         return new EligibleVoterResponse(
                 eligibleVoterId.getVotingProposalId(),
                 eligibleVoterId.getStudentIndex(),
-                eligibleVoter.getVotedAt(),
-                eligibleVoter.getReceiptHash()
+                eligibleVoter.getVotedAt()
         );
     }
 

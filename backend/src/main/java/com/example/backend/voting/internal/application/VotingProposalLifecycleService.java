@@ -27,15 +27,19 @@ public class VotingProposalLifecycleService {
         );
 
         for (VotingProposal proposal : proposals) {
-            if (proposal.isLocked()) {
-                if (!now.isBefore(proposal.getEndsAt())) {
-                    proposal.close();
-                } else if (!now.isBefore(proposal.getStartsAt())) {
-                    proposal.open();
-                }
-            } else if (proposal.isOpen() && !now.isBefore(proposal.getEndsAt())) {
+            updateProposal(now, proposal);
+        }
+    }
+
+    public void updateProposal(OffsetDateTime now, VotingProposal proposal) {
+        if (proposal.isLocked()) {
+            if (!now.isBefore(proposal.getEndsAt())) {
                 proposal.close();
+            } else if (!now.isBefore(proposal.getStartsAt())) {
+                proposal.open();
             }
+        } else if (proposal.isOpen() && !now.isBefore(proposal.getEndsAt())) {
+            proposal.close();
         }
     }
 }

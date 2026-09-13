@@ -118,10 +118,7 @@ CREATE TABLE eligible_voters (
     voting_proposal_id  RAW(16) NOT NULL REFERENCES voting_proposals(voting_proposal_id),
     student_index       VARCHAR2(20) NOT NULL REFERENCES accounts(student_index),
     voted_at            TIMESTAMP WITH TIME ZONE,
-    receipt_hash        VARCHAR2(64) NOT NULL,
 
     CONSTRAINT pk_eligible_voters
-        PRIMARY KEY (voting_proposal_id, student_index),
-    CONSTRAINT uq_eligible_voter_receipt_hash
-        UNIQUE (receipt_hash)
+        PRIMARY KEY (voting_proposal_id, student_index)
 );

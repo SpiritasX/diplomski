@@ -14,47 +14,36 @@ import java.time.OffsetDateTime;
 import java.util.Objects;
 
 @Entity
-@Table(name = "ELIGIBLE_VOTERS")
+@Table(name = "SECRET_PARTICIPATIONS")
 @Getter
-public class EligibleVoter {
+public class SecretParticipation {
 
     @EmbeddedId
-    private EligibleVoterId eligibleVoterId;
+    private SecretParticipationId secretParticipationId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @MapsId("votingProposalId")
     @JoinColumn(name = "VOTING_PROPOSAL_ID", nullable = false, updatable = false)
     private VotingProposal votingProposal;
 
-    @Column(name = "VOTED_AT")
-    private OffsetDateTime votedAt;
+    @Column(name = "RECORDED_AT", nullable = false, updatable = false)
+    private OffsetDateTime recordedAt;
 
-    @Column(name = "VOTING_OPTION_NUMBER")
-    private Long votingOptionNumber;
-
-    protected EligibleVoter() {
+    protected SecretParticipation() {
     }
 
-    public EligibleVoter(VotingProposal votingProposal, String studentIndex) {
+    public SecretParticipation(VotingProposal votingProposal, String studentIndex, OffsetDateTime recordedAt) {
         Objects.requireNonNull(votingProposal, "votingProposal must not be null");
 
-        this.eligibleVoterId = new EligibleVoterId(
+        this.secretParticipationId = new SecretParticipationId(
                 votingProposal.getVotingProposalId(),
                 Objects.requireNonNull(studentIndex, "studentIndex must not be null")
         );
         this.votingProposal = votingProposal;
+        this.recordedAt = Objects.requireNonNull(recordedAt, "recordedAt must not be null");
     }
 
     public String getStudentIndex() {
-        return eligibleVoterId.getStudentIndex();
-    }
-
-    public boolean hasVoted() {
-        return votedAt != null;
-    }
-
-    public void recordPublicVote(Long votingOptionNumber, OffsetDateTime votedAt) {
-        this.votingOptionNumber = Objects.requireNonNull(votingOptionNumber, "votingOptionNumber must not be null");
-        this.votedAt = Objects.requireNonNull(votedAt, "votedAt must not be null");
+        return secretParticipationId.getStudentIndex();
     }
 }

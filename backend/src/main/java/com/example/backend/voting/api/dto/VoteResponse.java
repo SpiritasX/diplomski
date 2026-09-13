@@ -3,9 +3,9 @@ package com.example.backend.voting.api.dto;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-public record EligibleVoterResponse(
+public record VoteResponse(
         UUID proposalId,
-        String studentIndex,
-        OffsetDateTime votedAt
+        OffsetDateTime votedAt,
+        String receipt
 ) {
 }

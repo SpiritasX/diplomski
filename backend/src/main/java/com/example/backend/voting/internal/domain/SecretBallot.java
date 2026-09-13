@@ -14,47 +14,40 @@ import java.time.OffsetDateTime;
 import java.util.Objects;
 
 @Entity
-@Table(name = "ELIGIBLE_VOTERS")
+@Table(name = "SECRET_BALLOTS")
 @Getter
-public class EligibleVoter {
+public class SecretBallot {
 
     @EmbeddedId
-    private EligibleVoterId eligibleVoterId;
+    private SecretBallotId secretBallotId;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @MapsId("votingProposalId")
     @JoinColumn(name = "VOTING_PROPOSAL_ID", nullable = false, updatable = false)
     private VotingProposal votingProposal;
 
-    @Column(name = "VOTED_AT")
-    private OffsetDateTime votedAt;
-
-    @Column(name = "VOTING_OPTION_NUMBER")
+    @Column(name = "VOTING_OPTION_NUMBER", nullable = false, updatable = false)
     private Long votingOptionNumber;
 
-    protected EligibleVoter() {
+    @Column(name = "CAST_AT", nullable = false, updatable = false)
+    private OffsetDateTime castAt;
+
+    protected SecretBallot() {
     }
 
-    public EligibleVoter(VotingProposal votingProposal, String studentIndex) {
+    public SecretBallot(VotingProposal votingProposal, String receiptHash, Long votingOptionNumber, OffsetDateTime castAt) {
         Objects.requireNonNull(votingProposal, "votingProposal must not be null");
 
-        this.eligibleVoterId = new EligibleVoterId(
+        this.secretBallotId = new SecretBallotId(
                 votingProposal.getVotingProposalId(),
-                Objects.requireNonNull(studentIndex, "studentIndex must not be null")
+                Objects.requireNonNull(receiptHash, "receipt must not be null")
         );
         this.votingProposal = votingProposal;
-    }
-
-    public String getStudentIndex() {
-        return eligibleVoterId.getStudentIndex();
-    }
-
-    public boolean hasVoted() {
-        return votedAt != null;
-    }
-
-    public void recordPublicVote(Long votingOptionNumber, OffsetDateTime votedAt) {
         this.votingOptionNumber = Objects.requireNonNull(votingOptionNumber, "votingOptionNumber must not be null");
-        this.votedAt = Objects.requireNonNull(votedAt, "votedAt must not be null");
+        this.castAt = Objects.requireNonNull(castAt, "castAt must not be null");
+    }
+
+    public String getReceiptHash() {
+        return secretBallotId.getReceiptHash();
     }
 }
