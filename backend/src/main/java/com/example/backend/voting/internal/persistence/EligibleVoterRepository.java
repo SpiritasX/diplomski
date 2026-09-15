@@ -37,4 +37,36 @@ public interface EligibleVoterRepository extends JpaRepository<EligibleVoter, El
     List<EligibleVoter> findByProposalId(
             @Param("proposalId") UUID proposalId
     );
+
+    @Query("""
+            SELECT COUNT(voter)
+            FROM EligibleVoter voter
+            WHERE voter.votingProposal.votingProposalId = :proposalId
+            """)
+    long countEligibleVotersByProposalId(
+            @Param("proposalId") UUID proposalId
+    );
+
+    @Query("""
+            SELECT COUNT(voter)
+            FROM EligibleVoter voter
+            WHERE voter.votingProposal.votingProposalId = :proposalId
+                AND voter.votedAt IS NOT NULL
+            """)
+    long countPublicVotesByProposalId(
+            @Param("proposalId") UUID proposalId
+    );
+
+    @Query("""
+            SELECT
+                voter.votingOptionNumber AS optionNumber,
+                COUNT(voter) AS voteCount
+            FROM EligibleVoter voter
+            WHERE voter.votingProposal.votingProposalId = :proposalId
+                AND voter.votedAt IS NOT NULL
+            GROUP BY voter.votingOptionNumber
+            """)
+    List<VotingOptionVoteCount> countPublicVotesByProposalIdGroupedByOptionNumber(
+            @Param("proposalId") UUID proposalId
+    );
 }

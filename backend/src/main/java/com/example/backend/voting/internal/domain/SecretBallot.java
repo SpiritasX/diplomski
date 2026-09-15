@@ -29,6 +29,7 @@ public class SecretBallot {
     @Column(name = "VOTING_OPTION_NUMBER", nullable = false, updatable = false)
     private Long votingOptionNumber;
 
+    // TODO: remove because it perfectly ties secret participant to their ballot... It should be enough to save the time of someone voting.
     @Column(name = "CAST_AT", nullable = false, updatable = false)
     private OffsetDateTime castAt;
 

@@ -31,6 +31,7 @@ public class VotingProposalLifecycleService {
         }
     }
 
+    // TODO: publish proposal closed event
     public void updateProposal(OffsetDateTime now, VotingProposal proposal) {
         if (proposal.isLocked()) {
             if (!now.isBefore(proposal.getEndsAt())) {
