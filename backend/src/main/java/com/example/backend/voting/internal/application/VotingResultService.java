@@ -2,6 +2,7 @@ package com.example.backend.voting.internal.application;
 
 import com.example.backend.config.RefreshTokenHasher;
 import com.example.backend.shared.error.BusinessRuleViolationException;
+import com.example.backend.shared.error.ResourceNotFoundException;
 import com.example.backend.voting.internal.domain.VotingOption;
 import com.example.backend.voting.internal.domain.VotingOptionResult;
 import com.example.backend.voting.internal.domain.VotingProposal;
@@ -15,6 +16,7 @@ import com.example.backend.voting.internal.persistence.SecretParticipationReposi
 import com.example.backend.voting.internal.persistence.VotingOptionRepository;
 import com.example.backend.voting.internal.persistence.VotingOptionResultRepository;
 import com.example.backend.voting.internal.persistence.VotingOptionVoteCount;
+import com.example.backend.voting.internal.persistence.VotingProposalRepository;
 import com.example.backend.voting.internal.persistence.VotingResultRepository;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
@@ -32,36 +34,43 @@ import java.util.stream.Collectors;
 @Service
 public class VotingResultService {
 
+    private final VotingProposalRepository votingProposalRepository;
     private final EligibleVoterRepository eligibleVoterRepository;
     private final SecretParticipationRepository secretParticipationRepository;
     private final VotingOptionRepository votingOptionRepository;
     private final SecretBallotRepository secretBallotRepository;
     private final VotingResultRepository votingResultRepository;
-    private final VotingOptionResultRepository votingOptionResultRepository;
     private final RefreshTokenHasher resultHasher;
     private final EntityManager entityManager;
 
     public VotingResultService(
+            VotingProposalRepository votingProposalRepository,
             EligibleVoterRepository eligibleVoterRepository,
             SecretParticipationRepository secretParticipationRepository,
             VotingOptionRepository votingOptionRepository,
             SecretBallotRepository secretBallotRepository,
             VotingResultRepository votingResultRepository,
-            VotingOptionResultRepository votingOptionResultRepository,
             RefreshTokenHasher resultHasher,
             EntityManager entityManager
     ) {
+        this.votingProposalRepository = votingProposalRepository;
         this.eligibleVoterRepository = eligibleVoterRepository;
         this.secretParticipationRepository = secretParticipationRepository;
         this.votingOptionRepository = votingOptionRepository;
         this.secretBallotRepository = secretBallotRepository;
         this.votingResultRepository = votingResultRepository;
-        this.votingOptionResultRepository = votingOptionResultRepository;
         this.resultHasher = resultHasher;
         this.entityManager = entityManager;
     }
 
-    // TODO: trigger asynchronously on proposal closed event
+    @Transactional
+    public void computeAndStoreResult(UUID proposalId, OffsetDateTime now) {
+        VotingProposal proposal = votingProposalRepository.findForUpdateById(proposalId)
+                .orElseThrow(() -> new ResourceNotFoundException("Voting proposal not found."));
+
+        computeAndStoreResult(proposal, now);
+    }
+
     @Transactional
     public void computeAndStoreResult(VotingProposal proposal, OffsetDateTime now) {
         UUID proposalId = proposal.getVotingProposalId();
@@ -69,6 +78,10 @@ public class VotingResultService {
         assertClosed(proposal);
         assertResultNotComputed(proposalId);
 
+        storeResult(proposal, proposalId, now);
+    }
+
+    private void storeResult(VotingProposal proposal, UUID proposalId, OffsetDateTime now) {
         long eligibleCount = eligibleVoterRepository.countEligibleVotersByProposalId(proposalId);
         long participationCount = participationCount(proposal);
 

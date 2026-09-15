@@ -3,6 +3,7 @@ package com.example.backend.voting.internal.application;
 import com.example.backend.voting.internal.domain.VotingProposal;
 import com.example.backend.voting.internal.domain.enums.VotingProposalStatus;
 import com.example.backend.voting.internal.persistence.VotingProposalRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,9 +14,14 @@ import java.util.List;
 public class VotingProposalLifecycleService {
 
     private final VotingProposalRepository votingProposalRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
-    public VotingProposalLifecycleService(VotingProposalRepository votingProposalRepository) {
+    public VotingProposalLifecycleService(
+            VotingProposalRepository votingProposalRepository,
+            ApplicationEventPublisher eventPublisher
+    ) {
         this.votingProposalRepository = votingProposalRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -27,20 +33,38 @@ public class VotingProposalLifecycleService {
         );
 
         for (VotingProposal proposal : proposals) {
-            updateProposal(now, proposal);
+            LifecycleTransition transition = updateProposal(now, proposal);
+
+            if (transition == LifecycleTransition.CLOSED) {
+                eventPublisher.publishEvent(
+                        new VotingProposalClosedEvent(
+                                proposal.getVotingProposalId(),
+                                now
+                        )
+                );
+            }
         }
     }
 
-    // TODO: publish proposal closed event
-    public void updateProposal(OffsetDateTime now, VotingProposal proposal) {
+    public LifecycleTransition updateProposal(OffsetDateTime now, VotingProposal proposal) {
         if (proposal.isLocked()) {
             if (!now.isBefore(proposal.getEndsAt())) {
                 proposal.close();
+                return LifecycleTransition.CLOSED;
             } else if (!now.isBefore(proposal.getStartsAt())) {
                 proposal.open();
+                return LifecycleTransition.OPENED;
             }
         } else if (proposal.isOpen() && !now.isBefore(proposal.getEndsAt())) {
             proposal.close();
+            return LifecycleTransition.CLOSED;
         }
+        return LifecycleTransition.NONE;
+    }
+
+    public enum LifecycleTransition {
+        NONE,
+        OPENED,
+        CLOSED
     }
 }
