@@ -10,7 +10,6 @@ import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
 import lombok.Getter;
 
-import java.time.OffsetDateTime;
 import java.util.Objects;
 
 @Entity
@@ -29,14 +28,10 @@ public class SecretBallot {
     @Column(name = "VOTING_OPTION_NUMBER", nullable = false, updatable = false)
     private Long votingOptionNumber;
 
-    // TODO: remove because it perfectly ties secret participant to their ballot... It should be enough to save the time of someone voting.
-    @Column(name = "CAST_AT", nullable = false, updatable = false)
-    private OffsetDateTime castAt;
-
     protected SecretBallot() {
     }
 
-    public SecretBallot(VotingProposal votingProposal, String receiptHash, Long votingOptionNumber, OffsetDateTime castAt) {
+    public SecretBallot(VotingProposal votingProposal, String receiptHash, Long votingOptionNumber) {
         Objects.requireNonNull(votingProposal, "votingProposal must not be null");
 
         this.secretBallotId = new SecretBallotId(
@@ -45,7 +40,6 @@ public class SecretBallot {
         );
         this.votingProposal = votingProposal;
         this.votingOptionNumber = Objects.requireNonNull(votingOptionNumber, "votingOptionNumber must not be null");
-        this.castAt = Objects.requireNonNull(castAt, "castAt must not be null");
     }
 
     public String getReceiptHash() {

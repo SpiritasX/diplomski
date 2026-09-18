@@ -1,7 +1,5 @@
 package com.example.backend.voting.api;
 
-// TODO generate results: count -> quorum -> decision rule -> result
-
 import com.example.backend.voting.api.dto.CastVoteRequest;
 import com.example.backend.voting.api.dto.VoteResponse;
 import com.example.backend.voting.internal.application.VoteService;

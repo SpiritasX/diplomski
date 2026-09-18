@@ -22,7 +22,6 @@ CREATE TABLE secret_ballots (
     voting_proposal_id      RAW(16) NOT NULL,
     receipt_hash            VARCHAR2(64) NOT NULL,
     voting_option_number    NUMBER(19) NOT NULL,
-    cast_at                 TIMESTAMP WITH TIME ZONE DEFAULT SYSTIMESTAMP NOT NULL,
 
     CONSTRAINT pk_secret_ballots
         PRIMARY KEY (voting_proposal_id, receipt_hash),

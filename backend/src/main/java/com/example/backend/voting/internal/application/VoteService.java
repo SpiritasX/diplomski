@@ -104,8 +104,7 @@ public class VoteService {
                 new SecretBallot(
                         proposal,
                         receiptData.hash(),
-                        optionNumber,
-                        votedAt
+                        optionNumber
                 )
         );
 
