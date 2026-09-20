@@ -31,7 +31,4 @@ CREATE TABLE secret_ballots (
     CONSTRAINT fk_secret_ballot_option
         FOREIGN KEY (voting_proposal_id, voting_option_number)
         REFERENCES voting_options(voting_proposal_id, voting_option_number)
--- TODO: uncomment when we have a lookup api
---     CONSTRAINT uq_receipt_hash
---         UNIQUE (voting_proposal_id?, receipt_hash)
 );

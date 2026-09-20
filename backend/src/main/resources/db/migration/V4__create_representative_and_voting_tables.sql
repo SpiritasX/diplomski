@@ -58,7 +58,7 @@ CREATE TABLE voting_proposals (
         CHECK (decision_rule IN ('PLURALITY', 'SIMPLE_MAJORITY', 'UNANIMITY')),
     CONSTRAINT chk_voting_proposal_locked_configuration
         CHECK (
-            status = 'DRAFT'
+            status = 'DRAFT' OR status = 'CANCELLED'
             OR (
                 ballot_type IS NOT NULL
                 AND starts_at IS NOT NULL
