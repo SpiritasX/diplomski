@@ -23,6 +23,7 @@ import com.example.backend.voting.internal.domain.enums.QuorumType;
 import com.example.backend.voting.internal.persistence.EligibleVoterRepository;
 import com.example.backend.voting.internal.persistence.VotingOptionRepository;
 import com.example.backend.voting.internal.persistence.VotingProposalRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -299,7 +300,7 @@ public class VotingProposalService {
 
     private void assertEditorAccess(VotingProposal proposal, String editorStudentIndex) {
         if (!identityAccess.hasActiveMandateInBody(editorStudentIndex, proposal.getCreatorBodyId(), now())) {
-            throw new BusinessRuleViolationException("Only representatives of the same body can edit this proposal.");
+            throw new AccessDeniedException("Only representatives of the same body can edit this proposal.");
         }
     }
 
