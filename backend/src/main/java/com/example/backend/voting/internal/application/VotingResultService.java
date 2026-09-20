@@ -14,7 +14,6 @@ import com.example.backend.voting.internal.persistence.EligibleVoterRepository;
 import com.example.backend.voting.internal.persistence.SecretBallotRepository;
 import com.example.backend.voting.internal.persistence.SecretParticipationRepository;
 import com.example.backend.voting.internal.persistence.VotingOptionRepository;
-import com.example.backend.voting.internal.persistence.VotingOptionResultRepository;
 import com.example.backend.voting.internal.persistence.VotingOptionVoteCount;
 import com.example.backend.voting.internal.persistence.VotingProposalRepository;
 import com.example.backend.voting.internal.persistence.VotingResultRepository;
@@ -22,6 +21,7 @@ import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -42,6 +42,7 @@ public class VotingResultService {
     private final VotingResultRepository votingResultRepository;
     private final RefreshTokenHasher resultHasher;
     private final EntityManager entityManager;
+    private final Clock clock;
 
     public VotingResultService(
             VotingProposalRepository votingProposalRepository,
@@ -51,8 +52,8 @@ public class VotingResultService {
             SecretBallotRepository secretBallotRepository,
             VotingResultRepository votingResultRepository,
             RefreshTokenHasher resultHasher,
-            EntityManager entityManager
-    ) {
+            EntityManager entityManager,
+            Clock clock) {
         this.votingProposalRepository = votingProposalRepository;
         this.eligibleVoterRepository = eligibleVoterRepository;
         this.secretParticipationRepository = secretParticipationRepository;
@@ -61,14 +62,15 @@ public class VotingResultService {
         this.votingResultRepository = votingResultRepository;
         this.resultHasher = resultHasher;
         this.entityManager = entityManager;
+        this.clock = clock;
     }
 
     @Transactional
-    public void computeAndStoreResult(UUID proposalId, OffsetDateTime now) {
+    public void computeAndStoreResult(UUID proposalId) {
         VotingProposal proposal = votingProposalRepository.findForUpdateById(proposalId)
                 .orElseThrow(() -> new ResourceNotFoundException("Voting proposal not found."));
 
-        computeAndStoreResult(proposal, now);
+        computeAndStoreResult(proposal, OffsetDateTime.now(clock));
     }
 
     @Transactional

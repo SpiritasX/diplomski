@@ -17,9 +17,6 @@ public class VotingProposalClosedEventListener {
     @Async
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void computeResult(VotingProposalClosedEvent event) {
-        votingResultService.computeAndStoreResult(
-                event.proposalId(),
-                event.closedAt()
-        );
+        votingResultService.computeAndStoreResult(event.proposalId());
     }
 }
