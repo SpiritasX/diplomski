@@ -1,7 +1,7 @@
 package com.example.backend.identity.internal.application;
 
 import com.example.backend.config.RefreshTokenGenerator;
-import com.example.backend.config.RefreshTokenHasher;
+import com.example.backend.shared.hashing.Sha256Hasher;
 import com.example.backend.config.RefreshTokenProperties;
 import com.example.backend.identity.internal.domain.Account;
 import com.example.backend.identity.internal.domain.RefreshSession;
@@ -29,7 +29,7 @@ public class RefreshTokenService {
     private final RefreshSessionRepository refreshSessionRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final RefreshTokenGenerator refreshTokenGenerator;
-    private final RefreshTokenHasher refreshTokenHasher;
+    private final Sha256Hasher sha256Hasher;
     private final RefreshTokenProperties refreshTokenProperties;
     private final Clock clock;
 
@@ -38,7 +38,7 @@ public class RefreshTokenService {
             RefreshSessionRepository refreshSessionRepository,
             RefreshTokenRepository refreshTokenRepository,
             RefreshTokenGenerator refreshTokenGenerator,
-            RefreshTokenHasher refreshTokenHasher,
+            Sha256Hasher sha256Hasher,
             RefreshTokenProperties refreshTokenProperties,
             Clock clock
     ) {
@@ -46,7 +46,7 @@ public class RefreshTokenService {
         this.refreshSessionRepository = refreshSessionRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.refreshTokenGenerator = refreshTokenGenerator;
-        this.refreshTokenHasher = refreshTokenHasher;
+        this.sha256Hasher = sha256Hasher;
         this.refreshTokenProperties = refreshTokenProperties;
         this.clock = clock;
     }
@@ -66,7 +66,7 @@ public class RefreshTokenService {
 
     @Transactional(noRollbackFor = BadCredentialsException.class)
     public RefreshGrant rotate(String rawToken) {
-        String tokenHash = refreshTokenHasher.hash(rawToken);
+        String tokenHash = sha256Hasher.hash(rawToken);
         RefreshToken currentToken = refreshTokenRepository.findForUpdateByTokenHash(tokenHash)
                 .orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
 
@@ -102,7 +102,7 @@ public class RefreshTokenService {
 
     @Transactional
     public void logout(String rawToken) {
-        String tokenHash = refreshTokenHasher.hash(rawToken);
+        String tokenHash = sha256Hasher.hash(rawToken);
         RefreshToken token = refreshTokenRepository.findForUpdateByTokenHash(tokenHash)
                 .orElseThrow(() -> new BadCredentialsException("Invalid refresh token"));
 
@@ -116,7 +116,7 @@ public class RefreshTokenService {
         String rawToken = refreshTokenGenerator.generate();
         RefreshToken token = new RefreshToken(
                 session,
-                refreshTokenHasher.hash(rawToken),
+                sha256Hasher.hash(rawToken),
                 issuedAt
         );
 

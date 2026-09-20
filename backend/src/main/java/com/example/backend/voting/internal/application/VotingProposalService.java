@@ -1,7 +1,7 @@
 package com.example.backend.voting.internal.application;
 
-import com.example.backend.config.RefreshTokenGenerator;
-import com.example.backend.config.RefreshTokenHasher;
+import com.example.backend.shared.hashing.CanonicalHashEncoder;
+import com.example.backend.shared.hashing.Sha256Hasher;
 import com.example.backend.identity.IdentityAccess;
 import com.example.backend.shared.error.BusinessRuleViolationException;
 import com.example.backend.shared.error.ResourceNotFoundException;
@@ -40,14 +40,11 @@ import java.util.stream.Stream;
 @Service
 public class VotingProposalService {
 
-    private static final int MAX_RECEIPT_HASH_GENERATION_ATTEMPTS = 10;
-
     private final VotingProposalRepository votingProposalRepository;
     private final VotingOptionRepository votingOptionRepository;
     private final EligibleVoterRepository eligibleVoterRepository;
     private final IdentityAccess identityAccess;
-    private final RefreshTokenGenerator refreshTokenGenerator;
-    private final RefreshTokenHasher refreshTokenHasher;
+    private final Sha256Hasher sha256Hasher;
     private final Clock clock;
 
     public VotingProposalService(
@@ -55,16 +52,14 @@ public class VotingProposalService {
             VotingOptionRepository votingOptionRepository,
             EligibleVoterRepository eligibleVoterRepository,
             IdentityAccess identityAccess,
-            RefreshTokenGenerator refreshTokenGenerator,
-            RefreshTokenHasher refreshTokenHasher,
+            Sha256Hasher sha256Hasher,
             Clock clock
     ) {
         this.votingProposalRepository = votingProposalRepository;
         this.votingOptionRepository = votingOptionRepository;
         this.eligibleVoterRepository = eligibleVoterRepository;
         this.identityAccess = identityAccess;
-        this.refreshTokenGenerator = refreshTokenGenerator;
-        this.refreshTokenHasher = refreshTokenHasher;
+        this.sha256Hasher = sha256Hasher;
         this.clock = clock;
     }
 
@@ -465,50 +460,30 @@ public class VotingProposalService {
             List<ProposalOption> options,
             List<String> eligibleVoters
     ) {
-        StringBuilder builder = new StringBuilder();
+        CanonicalHashEncoder encoder = new CanonicalHashEncoder();
 
-        appendHashField(builder, "title", title);
-        appendHashField(builder, "ballot_type", ballotType.name());
-        appendHashField(builder, "starts_at", startsAt.toInstant().toString());
-        appendHashField(builder, "ends_at", endsAt.toInstant().toString());
-        appendHashField(builder, "quorum_type", quorumType.name());
-        appendHashField(builder, "quorum_value", quorumValue);
-        appendHashField(builder, "decision_rule", decisionRule.name());
+        encoder
+            .append("title", title)
+            .append("ballot_type", ballotType.name())
+            .append("starts_at", startsAt.toInstant().toString())
+            .append("ends_at", endsAt.toInstant().toString())
+            .append("quorum_type", quorumType.name())
+            .append("quorum_value", quorumValue.toString())
+            .append("decision_rule", decisionRule.name());
 
         options.stream()
-                .sorted((left, right) -> left.optionNumber().compareTo(right.optionNumber()))
-                .forEach(option -> appendHashField(
-                        builder,
-                        "option",
-                        option.optionNumber() + ":" + option.text()
-                ));
+                .sorted(Comparator.comparing(ProposalOption::optionNumber))
+                .forEach(option ->
+                        encoder.append("option", option.optionNumber() + ":" + option.text())
+                );
 
         eligibleVoters.stream()
                 .sorted()
-                .forEach(studentIndex -> appendHashField(
-                        builder,
-                        "eligible_voter",
-                        studentIndex
-                ));
+                .forEach(studentIndex ->
+                        encoder.append("eligible_voter", studentIndex)
+                );
 
-        return refreshTokenHasher.hash(builder.toString());
-    }
-
-    private static void appendHashField(
-            StringBuilder builder,
-            String name,
-            Object value
-    ) {
-        String normalizedValue = Objects.toString(value, "");
-
-        builder.append(name.length())
-                .append(':')
-                .append(name)
-                .append('=')
-                .append(normalizedValue.length())
-                .append(':')
-                .append(normalizedValue)
-                .append('\n');
+        return sha256Hasher.hash(encoder.build());
     }
 
     private OffsetDateTime now() {

@@ -1,6 +1,7 @@
 package com.example.backend.voting.internal.application;
 
-import com.example.backend.config.RefreshTokenHasher;
+import com.example.backend.shared.hashing.CanonicalHashEncoder;
+import com.example.backend.shared.hashing.Sha256Hasher;
 import com.example.backend.shared.error.BusinessRuleViolationException;
 import com.example.backend.shared.error.ResourceNotFoundException;
 import com.example.backend.voting.internal.domain.VotingOption;
@@ -40,7 +41,7 @@ public class VotingResultService {
     private final VotingOptionRepository votingOptionRepository;
     private final SecretBallotRepository secretBallotRepository;
     private final VotingResultRepository votingResultRepository;
-    private final RefreshTokenHasher resultHasher;
+    private final Sha256Hasher resultHasher;
     private final EntityManager entityManager;
     private final Clock clock;
 
@@ -51,7 +52,7 @@ public class VotingResultService {
             VotingOptionRepository votingOptionRepository,
             SecretBallotRepository secretBallotRepository,
             VotingResultRepository votingResultRepository,
-            RefreshTokenHasher resultHasher,
+            Sha256Hasher resultHasher,
             EntityManager entityManager,
             Clock clock) {
         this.votingProposalRepository = votingProposalRepository;
@@ -238,37 +239,23 @@ public class VotingResultService {
             OffsetDateTime computedAt,
             Map<Long, Long> voteCountsByOptionNumber
     ) {
-        StringBuilder builder = new StringBuilder();
+        CanonicalHashEncoder encoder = new CanonicalHashEncoder();
 
-        appendHashField(builder, "voting_proposal_id", proposalId);
-        appendHashField(builder, "eligible_count", eligibleCount);
-        appendHashField(builder, "participation_count", participationCount);
-        appendHashField(builder, "quorum_met", quorumMet);
-        appendHashField(builder, "outcome", outcome.name());
-        appendHashField(builder, "computed_at", computedAt.toInstant().toString());
+        encoder
+                .append("voting_proposal_id", proposalId.toString())
+                .append("eligible_count", String.valueOf(eligibleCount))
+                .append("participation_count", String.valueOf(participationCount))
+        		.append("quorum_met", String.valueOf(quorumMet))
+        		.append("outcome", outcome.name())
+        		.append("computed_at", computedAt.toInstant().toString());
 
         voteCountsByOptionNumber.entrySet()
                 .stream()
                 .sorted(Map.Entry.comparingByKey())
-                .forEach(entry -> appendHashField(
-                        builder,
-                        "option_result",
-                        entry.getKey() + ":" + entry.getValue()
-                ));
+                .forEach(entry ->
+                        encoder.append("option_result", entry.getKey() + ":" + entry.getValue())
+                );
 
-        return resultHasher.hash(builder.toString());
-    }
-
-    private static void appendHashField(StringBuilder builder, String name, Object value) {
-        String normalizedValue = Objects.toString(value, "");
-
-        builder.append(name.length())
-                .append(':')
-                .append(name)
-                .append('=')
-                .append(normalizedValue.length())
-                .append(':')
-                .append(normalizedValue)
-                .append('\n');
+        return resultHasher.hash(encoder.build());
     }
 }

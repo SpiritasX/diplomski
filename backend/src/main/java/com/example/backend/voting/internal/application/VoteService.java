@@ -1,6 +1,6 @@
 package com.example.backend.voting.internal.application;
 
-import com.example.backend.config.RefreshTokenHasher;
+import com.example.backend.shared.hashing.Sha256Hasher;
 import com.example.backend.shared.error.BusinessRuleViolationException;
 import com.example.backend.shared.error.ResourceNotFoundException;
 import com.example.backend.voting.api.dto.CastVoteRequest;
@@ -35,7 +35,7 @@ public class VoteService {
     private final EligibleVoterRepository eligibleVoterRepository;
     private final SecretBallotRepository secretBallotRepository;
     private final SecretParticipationRepository secretParticipationRepository;
-    private final RefreshTokenHasher receiptHasher;
+    private final Sha256Hasher receiptHasher;
     private final Clock clock;
     private final VotingProposalLifecycleService votingProposalLifecycleService;
 
@@ -46,7 +46,7 @@ public class VoteService {
             EligibleVoterRepository eligibleVoterRepository,
             SecretBallotRepository secretBallotRepository,
             SecretParticipationRepository secretParticipationRepository,
-            RefreshTokenHasher receiptHasher,
+            Sha256Hasher receiptHasher,
             Clock clock
     ) {
         this.votingProposalLifecycleService = votingProposalLifecycleService;

@@ -1,4 +1,4 @@
-package com.example.backend.config;
+package com.example.backend.shared.hashing;
 
 import org.springframework.stereotype.Component;
 
@@ -8,7 +8,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
 
 @Component
-public class RefreshTokenHasher {
+public class Sha256Hasher {
 
     public String hash(String token) {
         try {
