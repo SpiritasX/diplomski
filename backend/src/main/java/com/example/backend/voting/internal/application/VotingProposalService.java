@@ -233,7 +233,7 @@ public class VotingProposalService {
             throw new BusinessRuleViolationException("Voting proposal must have at least one eligible voter before locking.");
         }
 
-        Long quorumValue = normalizedQuorumValue(proposal.getQuorumType(), proposal.getQuorumValue());
+        Long quorumValue = normalizedQuorumValue(proposal.getQuorumType(), proposal.getQuorumValue(), eligibleStudentIndexes.size());
         proposal.setQuorumValue(quorumValue);
 
         String configurationHash = configurationHash(
@@ -304,7 +304,7 @@ public class VotingProposalService {
         }
     }
 
-    private static void validateProposalBeforeLock(VotingProposal proposal) {
+    private void validateProposalBeforeLock(VotingProposal proposal) {
         if (proposal.getBallotType() == null) {
             throw new BusinessRuleViolationException("Voting proposal ballot type is required before locking.");
         }
@@ -329,10 +329,16 @@ public class VotingProposalService {
             throw new BusinessRuleViolationException("Voting proposal decision rule is required before locking.");
         }
 
-        normalizedQuorumValue(proposal.getQuorumType(), proposal.getQuorumValue());
+        normalizedQuorumValue(
+                proposal.getQuorumType(),
+                proposal.getQuorumValue(),
+                eligibleVoterRepository
+                        .findByProposalId(proposal.getVotingProposalId())
+                        .size()
+        );
     }
 
-    private static Long normalizedQuorumValue(QuorumType quorumType, Long quorumValue) {
+    private static Long normalizedQuorumValue(QuorumType quorumType, Long quorumValue, int eligibleVoterCount) {
         if (quorumType == QuorumType.NONE) {
             if (quorumValue != null && quorumValue != 0) {
                 throw new BusinessRuleViolationException("Quorum value must be empty or zero when quorum type is NONE.");
@@ -343,6 +349,10 @@ public class VotingProposalService {
 
         if (quorumValue == null || quorumValue < 1) {
             throw new BusinessRuleViolationException("Quorum value is required for this quorum type.");
+        }
+
+        if (quorumType == QuorumType.ABSOLUTE && quorumValue > eligibleVoterCount) {
+            throw new BusinessRuleViolationException("Absolute quorum value cannot exceed the number of eligible voters.");
         }
 
         if (quorumType == QuorumType.PERCENTAGE && quorumValue > 100) {
