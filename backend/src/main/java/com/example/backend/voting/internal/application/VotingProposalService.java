@@ -324,13 +324,7 @@ public class VotingProposalService {
             throw new BusinessRuleViolationException("Voting proposal decision rule is required before locking.");
         }
 
-        normalizedQuorumValue(
-                proposal.getQuorumType(),
-                proposal.getQuorumValue(),
-                eligibleVoterRepository
-                        .findByProposalId(proposal.getVotingProposalId())
-                        .size()
-        );
+        normalizedQuorumValue(proposal.getQuorumType(), proposal.getQuorumValue(), Integer.MAX_VALUE);
     }
 
     private static Long normalizedQuorumValue(QuorumType quorumType, Long quorumValue, int eligibleVoterCount) {
