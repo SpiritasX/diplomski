@@ -46,6 +46,7 @@ public class VotingProposalService {
     private final IdentityAccess identityAccess;
     private final Sha256Hasher sha256Hasher;
     private final Clock clock;
+    private final CanonicalHashEncoder encoder;
 
     public VotingProposalService(
             VotingProposalRepository votingProposalRepository,
@@ -53,13 +54,14 @@ public class VotingProposalService {
             EligibleVoterRepository eligibleVoterRepository,
             IdentityAccess identityAccess,
             Sha256Hasher sha256Hasher,
-            Clock clock
-    ) {
+            CanonicalHashEncoder encoder,
+            Clock clock) {
         this.votingProposalRepository = votingProposalRepository;
         this.votingOptionRepository = votingOptionRepository;
         this.eligibleVoterRepository = eligibleVoterRepository;
         this.identityAccess = identityAccess;
         this.sha256Hasher = sha256Hasher;
+        this.encoder = encoder;
         this.clock = clock;
     }
 
@@ -454,8 +456,6 @@ public class VotingProposalService {
             List<ProposalOption> options,
             List<String> eligibleVoters
     ) {
-        CanonicalHashEncoder encoder = new CanonicalHashEncoder();
-
         encoder
             .append("title", title)
             .append("ballot_type", ballotType.name())

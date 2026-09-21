@@ -44,6 +44,7 @@ public class VotingResultService {
     private final Sha256Hasher resultHasher;
     private final EntityManager entityManager;
     private final Clock clock;
+    private final CanonicalHashEncoder encoder;
 
     public VotingResultService(
             VotingProposalRepository votingProposalRepository,
@@ -53,6 +54,7 @@ public class VotingResultService {
             SecretBallotRepository secretBallotRepository,
             VotingResultRepository votingResultRepository,
             Sha256Hasher resultHasher,
+            CanonicalHashEncoder encoder,
             EntityManager entityManager,
             Clock clock) {
         this.votingProposalRepository = votingProposalRepository;
@@ -62,6 +64,7 @@ public class VotingResultService {
         this.secretBallotRepository = secretBallotRepository;
         this.votingResultRepository = votingResultRepository;
         this.resultHasher = resultHasher;
+        this.encoder = encoder;
         this.entityManager = entityManager;
         this.clock = clock;
     }
@@ -239,8 +242,6 @@ public class VotingResultService {
             OffsetDateTime computedAt,
             Map<Long, Long> voteCountsByOptionNumber
     ) {
-        CanonicalHashEncoder encoder = new CanonicalHashEncoder();
-
         encoder
                 .append("voting_proposal_id", proposalId.toString())
                 .append("eligible_count", String.valueOf(eligibleCount))
